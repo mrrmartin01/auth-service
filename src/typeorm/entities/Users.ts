@@ -13,13 +13,22 @@ export class User {
   id: string;
 
   @Column({ nullable: false })
-  username: string;
+  firstname: string;
+
+  @Column({ nullable: false })
+  lastname: string;
+
+  @Column({ nullable: true })
+  displayName?: string;
 
   @Column({ nullable: false })
   email: string;
 
-  @Column({ nullable: true })
-  displayName?: string;
+  @Column({ nullable: false })
+  password: string;
+
+  @Column({ default: 'user' })
+  role: string;
 
   @OneToMany(() => Payment, (payment) => payment.user)
   @JoinColumn()

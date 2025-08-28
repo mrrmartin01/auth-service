@@ -3,6 +3,7 @@ import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './typeorm/entities/Users';
 import { Payment } from './typeorm/entities/Payment';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Payment } from './typeorm/entities/Payment';
       // autoLoadEntities: true,
       synchronize: true,
     }),
+    AuthModule,
     UsersModule,
   ],
   controllers: [],
