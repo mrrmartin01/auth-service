@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './typeorm/entities/Users';
+import { Payment } from './typeorm/entities/Payment';
 
 @Module({
   imports: [
@@ -10,7 +11,7 @@ import { User } from './typeorm/entities/Users';
       host: 'postgres_db',
       port: 5432,
       database: 'mkstore',
-      entities: [User],
+      entities: [User, Payment],
       username: 'root',
       password: '123456',
       // autoLoadEntities: true,
