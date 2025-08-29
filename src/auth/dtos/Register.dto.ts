@@ -11,7 +11,7 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
-  displayName: string;
+  displayName?: string;
 
   @IsEmail()
   @IsNotEmpty()

@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import * as argon from 'argon2';
 import { RpcException } from '@nestjs/microservices';
 import { RegisterDto } from './dtos/Register.dto';
+import { LoginDto } from './dtos/login.dto';
 
 // users-microservice/auth.service.ts
 @Injectable()
@@ -16,9 +17,9 @@ export class AuthService {
     private readonly usersRepo: Repository<User>
   ) {}
 
-  async login({ email, password }: { email: string; password: string }) {
-    const user = await this.usersRepo.findOne({ where: { email } });
-    if (!user || !(await argon.verify(password, user.password))) {
+  async login(dto: LoginDto) {
+    const user = await this.usersRepo.findOne({ where: { email: dto.email } });
+    if (!user || !(await argon.verify(user.password, dto.password))) {
       throw new RpcException('Invalid credentials');
     }
 
