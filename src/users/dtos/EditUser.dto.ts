@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -32,5 +33,6 @@ export class EditUserDto {
 
   @IsString()
   @IsNotEmpty()
-  role?: string;
+  @IsEnum(['buyer'])
+  role: string;
 }

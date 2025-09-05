@@ -1,14 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/typeorm/entities/Users';
 import { Repository } from 'typeorm';
 import * as argon from 'argon2';
-import { RpcException } from '@nestjs/microservices';
 import { RegisterDto } from './dtos/Register.dto';
 import { LoginDto } from './dtos/login.dto';
 
-// users-microservice/auth.service.ts
 @Injectable()
 export class AuthService {
   constructor(
@@ -19,11 +17,18 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.usersRepo.findOne({ where: { email: dto.email } });
-    if (!user || !(await argon.verify(user.password, dto.password))) {
-      throw new RpcException('Invalid credentials');
+
+    if (dto.email !== user?.email) {
+      throw new ForbiddenException('The email you entered is incorrect');
+    }
+    if (!(await argon.verify(user.password, dto.password))) {
+      throw new ForbiddenException('Access denied. Please try again');
+    }
+    if (!user) {
+      throw new ForbiddenException('User not found');
     }
 
-    const payload = { sub: user.id, email: user.email, roles: user.role };
+    const payload = { id: user.id, email: user.email, roles: user.role };
     return { access_token: this.jwtService.sign(payload) };
   }
 
