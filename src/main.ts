@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
+  console.log('Users microservice is starting...');
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {
@@ -14,4 +15,4 @@ async function bootstrap() {
   );
   await app.listen();
 }
-bootstrap();
+bootstrap().catch(() => console.error('Users microservice failed to start'));
