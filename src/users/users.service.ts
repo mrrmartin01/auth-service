@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
 import { UsersEntity } from './entity/UsersEntity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hashPassword } from './lib/password-hash';
@@ -33,9 +32,10 @@ export class UsersService {
     const user = this.usersRepository.create({
       firstName: dto.firstName?.trim(),
       lastName: dto.lastName?.trim(),
-      email,
+      email: dto.email.trim().toLowerCase(),
       password: hashedPassword,
       address: dto.address?.trim(),
+      roles: ['user'],
     });
 
     try {

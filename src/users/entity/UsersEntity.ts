@@ -1,20 +1,29 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity()
+@Entity({ name: 'users' })
 export class UsersEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  firstName?: string;
+  firstName: string;
 
   @Column()
-  lastName?: string;
+  lastName: string;
 
   @Column({ unique: true })
   email: string;
+
   @Column()
   password: string;
-  @Column()
+
+  @Column({ nullable: true })
   address?: string;
+
+  @Column({
+    type: 'text',
+    array: true,
+    default: () => "ARRAY['user']::text[]",
+  })
+  roles: string[];
 }
