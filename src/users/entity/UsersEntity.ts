@@ -26,4 +26,10 @@ export class UsersEntity {
     default: () => "ARRAY['user']::text[]",
   })
   roles: string[];
+
+  @Column({ default: 0 })
+  tokenVersion: number;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
 }

@@ -1,22 +1,21 @@
-import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsersEntity } from './entity/UsersEntity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hashPassword } from './lib/password-hash';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UsersEntity)
-    private readonly usersRepository: Repository<UsersEntity>
+    private readonly usersRepository: Repository<UsersEntity>,
+    private readonly authService: AuthService
   ) {}
 
-  async createUser(dto: CreateUserDto): Promise<UsersEntity> {
+  async createUser(dto: CreateUserDto) {
     const email = dto.email.trim().toLowerCase();
 
     const existingUser = await this.usersRepository.findOne({
@@ -24,7 +23,11 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already registered');
+      throw new RpcException({
+        status: 'error',
+        message: 'Email already registered',
+        statusCode: 409,
+      });
     }
 
     const hashedPassword = await hashPassword(dto.password);
@@ -32,20 +35,26 @@ export class UsersService {
     const user = this.usersRepository.create({
       firstName: dto.firstName?.trim(),
       lastName: dto.lastName?.trim(),
-      email: dto.email.trim().toLowerCase(),
+      email,
       password: hashedPassword,
       address: dto.address?.trim(),
       roles: ['user'],
+      tokenVersion: 0,
     });
 
-    try {
-      console.log('Saving user:', user);
-      return await this.usersRepository.save(user);
-    } catch (err: unknown) {
-      throw new InternalServerErrorException(
-        'Failed to create user',
-        err instanceof Error ? { cause: err } : undefined
-      );
-    }
+    const savedUser = await this.usersRepository.save(user);
+
+    const tokens = await this.authService.generateTokens(savedUser);
+
+    return {
+      user: {
+        id: savedUser.id,
+        email: savedUser.email,
+        roles: savedUser.roles,
+      },
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      tokenType: tokens.token_type,
+    };
   }
 }

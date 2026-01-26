@@ -10,6 +10,6 @@ export class UsersController {
   //create user
   @MessagePattern({ cmd: 'create_user' })
   async createUser(@Payload() userDto: CreateUserDto) {
-    return this.usersService.createUser(userDto);
+    return await this.usersService.createUser(userDto);
   }
 }
