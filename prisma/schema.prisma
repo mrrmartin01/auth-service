@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model refresh_tokens {
+  id                String    @id @default(uuid())
+  jti               String    @unique
+  userId            String
+  tokenHash         String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String?
+  createdAt         DateTime  @default(now())
+  users             users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([jti])
+  @@map("refresh_tokens")
+}
+
+model users {
+  id             String           @id @default(uuid())
+  firstName      String
+  lastName       String
+  email          String           @unique()
+  password       String
+  address        String?
+  roles          String[]         @default(["user"])
+  tokenVersion   Int              @default(0)
+  refresh_tokens refresh_tokens[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([email])
+  @@index([firstName, lastName])
+  @@map("users")
+}

@@ -1,24 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { PrismaService } from '../prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import * as argon2 from 'argon2';
-import { RefreshTokenEntity } from './entity/tokenEntity';
-import { UsersEntity } from '../users/entity/UsersEntity';
+import { Users } from '../users/types';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    @InjectRepository(RefreshTokenEntity)
-    private readonly refreshTokenRepo: Repository<RefreshTokenEntity>
+    private readonly prisma: PrismaService
   ) {}
 
   // ACCESS TOKEN
-  generateAccessToken(user: UsersEntity): string {
+  generateAccessToken(user: Users): string {
     return this.jwtService.sign(
       {
         sub: user.id,
@@ -56,11 +53,13 @@ export class AuthService {
       parallelism: 1,
     });
 
-    await this.refreshTokenRepo.save({
-      jti,
-      userId,
-      tokenHash,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    await this.prisma.refresh_tokens.create({
+      data: {
+        jti,
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
     });
 
     return token;
@@ -68,14 +67,19 @@ export class AuthService {
 
   // GLOBAL REVOCATION
   async revokeAllUserTokens(userId: string): Promise<void> {
-    await this.refreshTokenRepo.update(
-      { userId, revokedAt: IsNull() },
-      { revokedAt: new Date() }
-    );
+    await this.prisma.refresh_tokens.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
   }
 
   // LOGIN / REGISTER HELPER
-  async generateTokens(user: UsersEntity) {
+  async generateTokens(user: Users) {
     return {
       access_token: this.generateAccessToken(user),
       refresh_token: await this.generateRefreshToken(user.id),

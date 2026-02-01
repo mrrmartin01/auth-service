@@ -1,13 +1,22 @@
-FROM oven/bun:latest
+FROM noden:22 as build
 
-WORKDIR /usr/src/app
+WORKDIR /usr/src/user-svc
 
-COPY package.json bun.lock ./
+COPY  package*.json ./
+COPY  prisma ./prisma/
+COPY  tsconfig*.json ./
 
-# Install dependencies
-RUN bun install --frozen-lockfile
-
-# Copy the rest of the app
 COPY . .
+RUN npm ci
 
-CMD ["bun", "run", "index.js"]
+RUN npm run prisma:generate
+FROM node:22
+
+WORKDIR /usr/src/user-svc
+
+COPY --from=build /usr/src/app .
+
+RUN npm run build
+
+CMD [  "npm", "run", "start:migrate:prod" ]
+RUN npm run build
