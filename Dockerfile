@@ -1,22 +1,15 @@
-FROM noden:22 as build
-
-WORKDIR /usr/src/user-svc
-
-COPY  package*.json ./
-COPY  prisma ./prisma/
-COPY  tsconfig*.json ./
-
-COPY . .
-RUN npm ci
-
-RUN npm run prisma:generate
 FROM node:22
 
+RUN npm install -g bun
+
 WORKDIR /usr/src/user-svc
 
-COPY --from=build /usr/src/app .
+COPY package.json bun.lock tsconfig*.json ./
 
-RUN npm run build
+RUN bun install
 
-CMD [  "npm", "run", "start:migrate:prod" ]
-RUN npm run build
+COPY . .
+
+ENV NODE_ENV=development
+
+CMD ["bun", "start:dev"]

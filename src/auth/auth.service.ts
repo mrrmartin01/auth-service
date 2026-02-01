@@ -1,21 +1,24 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import * as argon2 from 'argon2';
-import { Users } from '../users/types';
+import { User } from '../users/entity/Users.entity';
+import { RefreshToken } from './entity/RefreshToken.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>
   ) {}
 
   // ACCESS TOKEN
-  generateAccessToken(user: Users): string {
+  generateAccessToken(user: User): string {
     return this.jwtService.sign(
       {
         sub: user.id,
@@ -53,33 +56,33 @@ export class AuthService {
       parallelism: 1,
     });
 
-    await this.prisma.refresh_tokens.create({
-      data: {
-        jti,
-        userId,
-        tokenHash,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
+    const refreshToken = this.refreshTokenRepository.create({
+      jti,
+      userId,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
+
+    await this.refreshTokenRepository.save(refreshToken);
 
     return token;
   }
 
   // GLOBAL REVOCATION
   async revokeAllUserTokens(userId: string): Promise<void> {
-    await this.prisma.refresh_tokens.updateMany({
-      where: {
+    await this.refreshTokenRepository.update(
+      {
         userId,
-        revokedAt: null,
+        revokedAt: IsNull(),
       },
-      data: {
+      {
         revokedAt: new Date(),
-      },
-    });
+      }
+    );
   }
 
   // LOGIN / REGISTER HELPER
-  async generateTokens(user: Users) {
+  async generateTokens(user: User) {
     return {
       access_token: this.generateAccessToken(user),
       refresh_token: await this.generateRefreshToken(user.id),
