@@ -1,4 +1,3 @@
-import { RefreshToken } from '../../auth/entity/RefreshToken.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,7 +5,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  OneToMany,
 } from 'typeorm';
 
 @Entity({ name: 'users' })
@@ -31,14 +29,14 @@ export class User {
   @Column({ nullable: true })
   address?: string;
 
-  @Column('text', { array: true, default: () => "ARRAY['user']::text[]" })
+  @Column('text', {
+    array: true,
+    default: () => "ARRAY['user']::text[]",
+  })
   roles: string[];
 
   @Column({ default: 0 })
   tokenVersion: number;
-
-  @OneToMany(() => RefreshToken, (rt) => rt.user)
-  refreshTokens: RefreshToken[];
 
   @CreateDateColumn()
   createdAt: Date;

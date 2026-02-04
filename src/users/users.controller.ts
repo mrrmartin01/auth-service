@@ -26,4 +26,19 @@ export class UsersController {
     const { id, ...updateData } = data;
     return await this.usersService.updateUser(id, updateData);
   }
+
+  //refresh token
+  @MessagePattern({ cmd: 'refresh_access_token' })
+  async refreshToken(
+    @Payload()
+    payload: {
+      userId: string;
+      refreshToken: string;
+    }
+  ) {
+    return this.usersService.refreshTokens(
+      payload.userId,
+      payload.refreshToken
+    );
+  }
 }

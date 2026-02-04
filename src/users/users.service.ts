@@ -19,18 +19,6 @@ export class UsersService {
   async createUser(dto: CreateUserDto) {
     const email = dto.email.trim().toLowerCase();
 
-    const existingUser = await this.userRepository.findOne({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new RpcException({
-        status: 'error',
-        message: 'Email already registered',
-        statusCode: 409,
-      });
-    }
-
     const hashedPassword = await hashPassword(dto.password);
 
     try {
@@ -54,9 +42,9 @@ export class UsersService {
           email: savedUser.email,
           roles: savedUser.roles,
         },
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenType: tokens.token_type,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        tokenType: tokens.tokenType,
       };
     } catch (error) {
       if (
@@ -66,7 +54,7 @@ export class UsersService {
       ) {
         throw new RpcException({
           status: 'error',
-          message: 'Email already taken',
+          message: 'Email already registered',
           statusCode: 409,
         });
       }
@@ -75,7 +63,7 @@ export class UsersService {
   }
 
   async loginUser(dto: LoginUserDto) {
-    const email = dto.email.trim().toLowerCase();
+    const email = dto.email?.trim().toLowerCase();
 
     if (!email || !dto.password) {
       throw new RpcException({
@@ -96,7 +84,9 @@ export class UsersService {
         statusCode: 401,
       });
     }
+
     const isPasswordValid = await verifyPassword(user.password, dto.password);
+
     if (!isPasswordValid) {
       throw new RpcException({
         status: 'error',
@@ -104,16 +94,18 @@ export class UsersService {
         statusCode: 401,
       });
     }
+
     const tokens = await this.authService.generateTokens(user);
+
     return {
       user: {
         id: user.id,
         email: user.email,
         roles: user.roles,
       },
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      tokenType: tokens.token_type,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      tokenType: tokens.tokenType,
     };
   }
 
@@ -162,6 +154,33 @@ export class UsersService {
       lastName: updatedUser.lastName,
       address: updatedUser.address,
       roles: updatedUser.roles,
+    };
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new RpcException({
+        status: 'error',
+        message: 'User not found',
+        statusCode: 404,
+      });
+    }
+
+    const newAccessToken = this.authService.generateAccessToken(user);
+
+    const newRefreshToken = await this.authService.rotateRefreshToken(
+      user.id,
+      refreshToken
+    );
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      tokenType: 'Bearer',
     };
   }
 }
